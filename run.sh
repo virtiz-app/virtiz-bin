@@ -9,7 +9,7 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-if [ KERNEL != "Linux" ]; then
+if [ $KERNEL != "Linux" ]; then
     echo "Unsupported kernel: $KERNEL"
     exit 1
 fi
