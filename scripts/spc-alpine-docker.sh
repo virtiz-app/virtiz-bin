@@ -1,0 +1,113 @@
+#!/usr/bin/env sh
+
+# This file is using docker to run commands
+
+# Detect docker can run
+if ! which docker >/dev/null; then
+  echo "Docker is not installed, please install docker first !"
+  exit 1
+fi
+DOCKER_EXECUTABLE="docker"
+# shellcheck disable=SC2046
+if [ $(id -u) -ne 0 ]; then
+    if ! docker info > /dev/null 2>&1; then
+        if [ "$SPC_USE_SUDO" != "yes" ]; then
+            echo "Docker command requires sudo"
+            # shellcheck disable=SC2039
+            echo -n 'To use sudo to run docker, run "export SPC_USE_SUDO=yes" and run command again'
+            exit 1
+        fi
+        DOCKER_EXECUTABLE="sudo docker"
+    fi
+fi
+
+
+
+# to check if qemu-docker run
+if [ "$SPC_USE_ARCH" = "" ]; then
+    SPC_USE_ARCH=x86_64
+fi
+case $SPC_USE_ARCH in
+x86_64)
+    ALPINE_FROM=alpine:edge
+    ;;
+aarch64)
+    ALPINE_FROM=multiarch/alpine:aarch64-edge
+    # shellcheck disable=SC2039
+    echo -e "\e[033m* Using different arch needs to setup qemu-static for docker !\e[0m"
+    $DOCKER_EXECUTABLE run --rm --privileged multiarch/qemu-user-static:register --reset > /dev/null
+    ;;
+*)
+    echo "Current arch is not supported to run in docker: $SPC_USE_ARCH"
+    exit 1
+    ;;
+esac
+
+if [ "$SPC_USE_MIRROR" = "yes" ]; then
+    SPC_USE_MIRROR="RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apk/repositories"
+else
+    SPC_USE_MIRROR="RUN echo 'Using original repo'"
+fi
+
+# Detect docker env is setup
+if ! $DOCKER_EXECUTABLE images | grep -q cwcc-spc-$SPC_USE_ARCH; then
+    echo "Docker container does not exist. Building docker image ..."
+    $DOCKER_EXECUTABLE build -t cwcc-spc-$SPC_USE_ARCH -f- . <<EOF
+FROM $ALPINE_FROM
+$SPC_USE_MIRROR
+RUN apk update; \
+    apk add --no-cache \
+        autoconf \
+        automake \
+        gettext \
+        bash \
+        binutils \
+        bison \
+        build-base \
+        cmake \
+        curl \
+        file \
+        flex \
+        g++ \
+        gcc \
+        git \
+        jq \
+        libgcc \
+        libtool \
+        libstdc++ \
+        linux-headers \
+        m4 \
+        make \
+        php82 \
+        php82-common \
+        php82-pcntl \
+        php82-phar \
+        php82-posix \
+        php82-sodium \
+        php82-tokenizer \
+        php82-dom \
+        php82-xml \
+        php82-xmlwriter \
+        composer \
+        pkgconfig \
+        wget \
+        xz
+
+WORKDIR /app
+ADD ./src /app/src
+COPY ./composer.* /app/
+ADD ./bin /app/bin
+RUN composer install --no-dev --classmap-authoritative
+EOF
+fi
+
+# Check if in ci (local terminal can execute with -it)
+if [ -t 0 ]; then
+    INTERACT=-it
+else
+    INTERACT=''
+fi
+
+# Run docker
+# shellcheck disable=SC2068
+$DOCKER_EXECUTABLE run --rm $INTERACT -e SPC_FIX_DEPLOY_ROOT="$(pwd)" -v "$(pwd)"/config:/app/config -v "$(pwd)"/src:/app/src -v "$(pwd)"/buildroot:/app/buildroot -v "$(pwd)"/source:/app/source -v "$(pwd)"/downloads:/app/downloads cwcc-spc-$SPC_USE_ARCH bin/spc $@
