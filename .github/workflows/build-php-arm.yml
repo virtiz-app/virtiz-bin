@@ -9,16 +9,6 @@ on:
         type: choice
         options:
           - aarch64
-      version:
-        required: true
-        description: php version to compile
-        default: '8.2'
-        type: choice
-        options:
-          - '8.2'
-          - '8.1'
-          - '8.0'
-          - '7.4'
       build-cli:
         description: build cli binary
         default: true
@@ -33,27 +23,16 @@ env:
 
 jobs:
   build:
-    name: build ${{ inputs.version }} on ${{ inputs.operating-system }}
+    name: build 8.2 on ${{ inputs.operating-system }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      # Cache downloaded source
-      - id: cache-download
-        uses: actions/cache@v3
-        with:
-          path: downloads
-          key: php-${{ inputs.version }}-dependencies-${{ inputs.extensions }}
+      - run: chmod +x ./scripts/spc-alpine-docker
+      - run: SPC_USE_ARCH=${{ inputs.operating-system }} ./scripts/spc-alpine-docker download --with-php=8.2 --for-extensions="apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,ftp,gd,iconv,intl,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_pgsql,pdo_sqlite,pgsql,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib"
+      - run: SPC_USE_ARCH=${{ inputs.operating-system }} ./scripts/spc-alpine-docker build "apcu,bcmath,calendar,ctype,curl,dba,dom,exif,fileinfo,filter,ftp,gd,iconv,intl,mbregex,mbstring,mysqli,mysqlnd,opcache,openssl,pcntl,pdo,pdo_mysql,pdo_pgsql,pdo_sqlite,pgsql,phar,posix,readline,redis,session,simplexml,sockets,sodium,sqlite3,tokenizer,xml,xmlreader,xmlwriter,xsl,zip,zlib" --build-cli
 
-      # If there's no dependencies cache, fetch sources, with or without debug
-      - if: steps.cache-download.outputs.cache-hit != 'true'
-        run: SPC_USE_ARCH=${{ inputs.operating-system }} ./scripts/spc-alpine-docker download --with-php=${{ inputs.version }} --for-extensions=${{ inputs.extensions }}
-
-      # Run build command
-      - run: SPC_USE_ARCH=${{ inputs.operating-system }} ./scripts/spc-alpine-docker build ${{ inputs.extensions }} --build-cli ${{ env.SPC_BUILD_MICRO }} ${{ env.SPC_BUILD_FPM }}
-
-      # Upload cli executable
       - uses: actions/upload-artifact@v3
         with:
-          name: php-${{ inputs.version }}-linux-${{ inputs.operating-system }}
-          path: buildroot/bin/php
+          name: php-8.2-linux-${{ inputs.operating-system }}
+          path: bin/php
