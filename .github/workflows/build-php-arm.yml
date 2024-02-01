@@ -9,14 +9,6 @@ on:
         type: choice
         options:
           - aarch64
-      build-cli:
-        description: build cli binary
-        default: true
-        type: boolean
-      extensions:
-        description: extensions to compile (comma separated)
-        required: true
-        type: string
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
