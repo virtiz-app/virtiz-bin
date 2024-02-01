@@ -4,7 +4,7 @@ KERNEL=$(uname -s)
 ARCH=$(arch)
 
 if [ "$#" -ne 1 ]; then
-    echo 'You need pass an argument like: ./run-sh "--version"'
+    echo 'You need pass an argument like: ./run.sh "--version"'
     exit 1
 fi
 

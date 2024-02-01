@@ -1,7 +1,0 @@
-{
-    "name": "virtiz-app/virtiz-bin",
-    "description": "Virtiz binaries",
-    "type": "project",
-    "minimum-stability": "stable",
-    "require": {}
-}
