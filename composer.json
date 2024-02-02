@@ -1,0 +1,13 @@
+{
+    "name": "virtiz-app/virtiz-bin",
+    "description": "Virtiz binaries",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "VirtizApp\\VirtizBin\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "require": {}
+}
